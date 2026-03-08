@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>City War 3D</title>
+    <style>
+        body { margin: 0; padding: 0; background: #000; color: white; font-family: Arial; }
+        #gameCanvas { width: 100%; height: 100%; position: fixed; top: 0; left: 0; }
+        #shootBtn { 
+            position: fixed; 
+            bottom: 50px; 
+            right: 50px; 
+            width: 100px; 
+            height: 100px; 
+            border-radius: 50%; 
+            background: red; 
+            color: white; 
+            font-size: 30px; 
+            border: 5px solid white; 
+            z-index: 1000;
+        }
+        .joystick {
+            position: fixed;
+            bottom: 50px;
+            left: 50px;
+            width: 150px;
+            height: 150px;
+            background: rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border: 3px solid white;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas"></canvas>
+    <button id="shootBtn" onclick="shoot()">🔫</button>
+    <div class="joystick" id="joystick"></div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        let player = {
+            x: canvas.width/2,
+            y: canvas.height/2,
+            health: 100,
+            kills: 0
+        };
+
+        let enemies = [];
+        let bullets = [];
+
+        // Create enemies
+        for(let i = 0; i < 10; i++) {
+            enemies.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                health: 50
+            });
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw player (3D tank)
+            ctx.fillStyle = '#0f0';
+            ctx.shadowColor = '#fff';
+            ctx.shadowBlur = 20;
+            
+            // Tank body
+            ctx.fillRect(player.x-30, player.y-20, 60, 40);
+            
+            // Tank turret
+            ctx.fillStyle = '#ff0';
+            ctx.beginPath();
+            ctx.arc(player.x, player.y, 15, 0, Math.PI*2);
+            ctx.fill();
+            
+            // Tank gun
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 10;
+            ctx.beginPath();
+            ctx.moveTo(player.x, player.y);
+            ctx.lineTo(player.x + 50, player.y);
+            ctx.stroke();
+            
+            // Draw enemies (3D)
+            enemies.forEach(enemy => {
+                ctx.fillStyle = '#f00';
+                ctx.shadowColor = '#f00';
+                ctx.fillRect(enemy.x-20, enemy.y-15, 40, 30);
+                
+                // Enemy gun
+                ctx.strokeStyle = '#ff0';
+                ctx.beginPath();
+                ctx.moveTo(enemy.x, enemy.y);
+                ctx.lineTo(enemy.x - 30, enemy.y);
+                ctx.stroke();
+            });
+            
+            // Draw bullets
+            bullets.forEach(bullet => {
+                ctx.fillStyle = '#ff0';
+                ctx.shadowColor = '#ff0';
+                ctx.beginPath();
+                ctx.arc(bullet.x, bullet.y, 5, 0, Math.PI*2);
+                ctx.fill();
+            });
+            
+            // UI
+            ctx.fillStyle = '#fff';
+            ctx.shadowBlur = 0;
+            ctx.font = '30px Arial';
+            ctx.fillText(`Health: ${player.health}`, 20, 50);
+            ctx.fillText(`Kills: ${player.kills}`, 20, 100);
+            
+            requestAnimationFrame(draw);
+        }
+
+        function shoot() {
+            bullets.push({
+                x: player.x + 50,
+                y: player.y,
+                vx: 10,
+                vy: 0
+            });
+            
+            // Check collision
+            bullets.forEach((bullet, index) => {
+                enemies.forEach((enemy, enemyIndex) => {
+                    if(bullet.x > enemy.x-20 && bullet.x < enemy.x+20) {
+                        enemies.splice(enemyIndex, 1);
+                        bullets.splice(index, 1);
+                        player.kills++;
+                        
+                        // Spawn new enemy
+                        enemies.push({
+                            x: Math.random() * canvas.width,
+                            y: Math.random() * canvas.height,
+                            health: 50
+                        });
+                    }
+                });
+            });
+        }
+
+        // Move player with touch
+        let joystickActive = false;
+        document.getElementById('joystick').addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            let touch = e.touches[0];
+            player.x = touch.clientX;
+            player.y = touch.clientY;
+        });
+
+        draw();
+
+        // Update bullets
+        setInterval(() => {
+            bullets.forEach(b => b.x += b.vx);
+        }, 50);
+    </script>
+</body>
+</html>
